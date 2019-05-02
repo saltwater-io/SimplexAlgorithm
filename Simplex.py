@@ -1,8 +1,8 @@
-# Simplex Algoritm adapted from tutorial here:
+# Simplex Algorithm adapted from tutorial here:
 #  https://medium.com/@jacob.d.moore1/coding-the-simplex-algorithm-from-scratch-using-python-and-numpy-93e3813e6e70
+#  Uses the big M method
 #
 # CSC 320: Linear Programming - Mrs. Elliot
-#
 #               Written by: Dakota McGuire
 
 import numpy as np
