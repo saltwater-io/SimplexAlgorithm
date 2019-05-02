@@ -1,3 +1,10 @@
+# Simplex Algoritm adapted from tutorial here:
+#  https://medium.com/@jacob.d.moore1/coding-the-simplex-algorithm-from-scratch-using-python-and-numpy-93e3813e6e70
+#
+# CSC 320: Linear Programming - Mrs. Elliot
+#
+#               Written by: Dakota McGuire
+
 import numpy as np
 
 
@@ -8,7 +15,9 @@ def gen_matrix(var, cons):
     return mat
 
 
-def next_round_r(table):
+# Checks to see if 1+ pivots are needed due
+#  to negative element(s) in furthest right column
+def next_pivot_right(table):
     m = min(table[:-1, -1])
     if m >= 0:
         return False
@@ -16,7 +25,9 @@ def next_round_r(table):
         return True
 
 
-def next_round(table):
+# Checks to see if 1+ pivots are needed due
+#  to negative element(s) in bottom row
+def next_pivot(table):
     lr = len(table[:, 0])
     m = min(table[lr - 1, :-1])
     if m >= 0:
@@ -25,7 +36,8 @@ def next_round(table):
         return True
 
 
-def find_neg_r(table):
+# Returns index of pivot on right column
+def find_pivot_right(table):
     lc = len(table[0, :])
     m = min(table[:-1, lc - 1])
     if m <= 0:
@@ -35,6 +47,7 @@ def find_neg_r(table):
     return n
 
 
+# Returns index of pivot on bottom row
 def find_neg(table):
     lr = len(table[:, 0])
     m = min(table[lr - 1, :-1])
@@ -45,9 +58,11 @@ def find_neg(table):
     return n
 
 
-def loc_piv_r(table):
+# Find pivot value in the right columns row
+# Most negative value in row
+def loc_piv_right(table):
     total = []
-    r = find_neg_r(table)
+    r = find_pivot_right(table)
     row = table[r, :-1]
     m = min(row)
     c = np.where(row == m)[0][0]
@@ -61,8 +76,10 @@ def loc_piv_r(table):
     return [index, c]
 
 
+# Find pivot value in the bottom row's column
+# Most negative value in column
 def loc_piv(table):
-    if next_round(table):
+    if next_pivot(table):
         total = []
         n = find_neg(table)
         for i, b in zip(table[:-1, n], table[:-1, -1]):
@@ -74,12 +91,16 @@ def loc_piv(table):
         return [index, n]
 
 
+# Converts tables to support minimization problems
+# This is using big M method, so objective function is left "as is"
 def convert_min(table):
     table[-1, :-2] = [-1 * i for i in table[-1, :-2]]
     table[-1, -1] = -1 * table[-1, -1]
     return table
 
 
+# Pivot function to remove negative entry in the final column or row
+# then updates table
 def pivot(row, col, table):
     lr = len(table[:, 0])
     lc = len(table[0, :])
@@ -101,6 +122,7 @@ def pivot(row, col, table):
         print('Cannot pivot on this element.')
 
 
+# Generates a table w/ x variables
 def gen_var(table):
     lc = len(table[0, :])
     lr = len(table[:, 0])
@@ -111,6 +133,7 @@ def gen_var(table):
     return v
 
 
+# Determines if constraints need to be added
 def add_cons(table):
     lr = len(table[:, 0])
     empty = []
@@ -126,6 +149,7 @@ def add_cons(table):
         return False
 
 
+# determines if objective function can be added
 def add_obj(table):
     lr = len(table[:, 0])
     empty = []
@@ -141,6 +165,7 @@ def add_obj(table):
         return False
 
 
+# Adds constraints from equation into tableau
 def constrain(table, eq):
     if add_cons(table):
         lc = len(table[0, :])
@@ -167,6 +192,7 @@ def constrain(table, eq):
         print('Cannot add another constraint.')
 
 
+# Adds objective function to last row of tableau
 def obj(table, eq):
     if add_obj(table):
         eq = [float(i) for i in eq.split(',')]
@@ -182,10 +208,11 @@ def obj(table, eq):
         print('You must finish adding constraints before the objective function can be added.')
 
 
+# Runs maximization function
 def max_z(table):
-    while next_round_r(table):
-        table = pivot(loc_piv_r(table)[0], loc_piv_r(table)[1], table)
-    while next_round(table):
+    while next_pivot_right(table):
+        table = pivot(loc_piv_right(table)[0], loc_piv_right(table)[1], table)
+    while next_pivot(table):
         table = pivot(loc_piv(table)[0], loc_piv(table)[1], table)
     lc = len(table[0, :])
     lr = len(table[:, 0])
@@ -204,11 +231,12 @@ def max_z(table):
     return val
 
 
+# Runs minimization function
 def min_z(table):
     table = convert_min(table)
-    while next_round_r(table):
-        table = pivot(loc_piv_r(table)[0], loc_piv_r(table)[1], table)
-    while next_round(table):
+    while next_pivot_right(table):
+        table = pivot(loc_piv_right(table)[0], loc_piv_right(table)[1], table)
+    while next_pivot(table):
         table = pivot(loc_piv(table)[0], loc_piv(table)[1], table)
     lc = len(table[0, :])
     lr = len(table[:, 0])
@@ -227,6 +255,9 @@ def min_z(table):
     return val
 
 
+# Converts a variable 'G' or 'L"
+# for greater than/less than
+# Respectively
 def convert(eq):
     eq = eq.split(',')
     if 'G' in eq:
@@ -241,19 +272,26 @@ def convert(eq):
         return eq
 
 
+# Runs program
 def main():
-    m = gen_matrix(2, 2)
-    constrain(m, '2,-1,G,10')
-    constrain(m, '1,1,L,20')
-    obj(m, '5,10,0')
+    # Currently set to test #3 from Ch4 HW pt. 2
+    # generates matrix
+    m = gen_matrix(3, 3)
+    # Adds constraints
+    constrain(m, '3,1,1,L,60')
+    constrain(m, '2,1,2,L,20')
+    constrain(m, '2,2,1,L,20')
+    # Adds objective function
+    obj(m, '2,-1,1,0')
     print(max_z(m))
-    m = gen_matrix(2, 4)
-    constrain(m, '2,5,G,30')
-    constrain(m, '-3,5,G,5')
-    constrain(m, '8,3,L,85')
-    constrain(m, '-9,7,L,42')
-    obj(m, '2,7,0')
-    print(min_z(m))
+
+    # m = gen_matrix(2, 4)
+    # constrain(m, '2,5,G,30')
+    # constrain(m, '-3,5,G,5')
+    # constrain(m, '8,3,L,85')
+    # constrain(m, '-9,7,L,42')
+    # obj(m, '2,7,0')
+    # print(min_z(m))
 
 
 if __name__ == "__main__":
